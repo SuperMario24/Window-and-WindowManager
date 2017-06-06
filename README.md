@@ -146,10 +146,63 @@ WIndowManager提供了两种删除接口，removeView和remoteViewImmediate，�
 三.Window的创建过程
 
 1.Activity的Window创建过程
-（1）在Activity启动的attch方法中，会创建Activity所属的Window，通过PolicyManager的makeNewWindow方法实现的
+（1）在Activity启动的attch方法中，会创建Activity所属的Window，通过PolicyManager的makeNewWindow方法实现的。
+PolicyManager是一个策略类，几个工厂方法全部在IPolicy中声明了：
+       
+         public interface IPolicy{
+                public Window makeNewWindow(Context context);
+                public LayoutInflater makeNewLayoutInflater(Context context);
+                public WindowMangerPolicy makeNewWindowManager();
+         public FallBackEventHandler makeNewFallBackEventHandler(Context context);
+        }
+在实际调用中 PolicyManager的真正实现是Policy类，其中的makeNewWindow方法的实现如下：
 
+        public Window makeNewWindow(Context context){
+                return new PhoneWindow(context);
+        }
+Activity的视图通过setContentView附属在Window上：
 
+        public void setContentView(int LayoutResId){
+                getWindow.setContentView(LayoutResId);
+                intiWindowDecorActionBar();
+        }
+Activity将具体实现交给了Window处理，也就是PhoneWindow，PhoneWindow的setContentView方法大致遵循如下几个步骤：
 
+1）如果没有DecorView，就创建它：
+2）将View添加到DecorView的mContentParent中：PhoneWindow通过generateLayout方法加载具体的布局文件到DecorView中--将Activity的
+视图添加到DecorView的mContentParent中即可。
+3）回调Activity的onContentChanged方法通知Activity视图已经发生改变。
+
+到此为止DecorView还没有被WindowManager正式添加到Window中，在ActivityThread的handleResumeActivity方法中，首先调用Activity
+的onResume方法，接着调用Activity的makeVisible方法，在这个方法中DecorView真正完成了添加和显示的功能：
+
+        void makeVisible(){
+                if(!mWindowAdded){
+                        ViewManager wm = getWindowManager();
+                        wm.addView(mDecor,getWindow().getAttributes());
+                        mWindowAdded = true;
+                }
+                mDecor.setVisible(View.VISIBLE);
+        }
+
+（2）Dialog的Window创建过程：和Activity类似
+1）创建Window，同样是通过PolicyManager的makeNewWindow方法完成。
+2）初始化DecorView并将Dialog的视图添加到DecorView中
+3）将DecorView添加到Window中并显示。
+注意：普通的Dialog必须采用Activity的Context，如果采用Application的Context会报错。因为Application里没有应用token，系统Window不需要
+token，或者将普通Dialog的层级设置为系统层级也可以。
+
+（3）Toast的Window创建过程：
+Toast属于系统Window，它的视图可以是系统默认样式，也可以是setView指定。
+        
+        Toast toast = new Toast(this);
+        TextView textView = new TextView(this);
+        textView.setText("this is toast");
+        toast.setView(textView);
+        toast.setDuration(Toast.LENGTH_SHORT);
+        toast.show();
+ 
+Toast是一个IPC过程。同时最多存在50个。
 
 
 
