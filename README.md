@@ -146,7 +146,7 @@ WIndowManager提供了两种删除接口，removeView和remoteViewImmediate，�
 三.Window的创建过程
 
 1.Activity的Window创建过程
-（1）在Activity启动的attch方法中，会创建Activity所属的Window，通过PolicyManager的makeNewWindow方法实现的。
+（1）在Activity启动的attach方法中，会创建Activity所属的Window，通过PolicyManager的makeNewWindow方法实现的。
 PolicyManager是一个策略类，几个工厂方法全部在IPolicy中声明了：
        
          public interface IPolicy{
